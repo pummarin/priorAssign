@@ -1,9 +1,8 @@
 <div>
   <input class="form-control" type="text" placeholder="message" [(ngModel)]="input">
   <button class="btn btn-success" (click)="sendMessage()">Send</button>
-  <div class="content">
+  <!-- <div class="content">
     <div *ngFor="let msg of messageService.todos">
-     
       <div *ngIf="msg.completed">
         <s>{{msg.title}}</s>
       </div>
@@ -12,5 +11,22 @@
       </div>
       <button (click)="toggleTodo(msg.id)">ToggleTodo</button>
     </div>
+  </div> -->
+</div>
+
+<div class="card" style="width: 18rem;" >
+  <div class="card-body">
+    <h1 class="card-title">จองคิวร้านอาหาร</h1>
+    <p class="card-text">ชื่อผู้จอง</p>
+    <input class="form-control" type="text" placeholder="ชื่อ-สกุล" [(ngModel)]="name">
+    <p class="card-text">จำนวน</p>
+    <input class="form-control" type="text" placeholder="ตย. 4 คน" [(ngModel)]="number">    
+    <!-- <a href="#" class="btn btn-primary">Go somewhere</a> -->
+  </div>
+  <div class="card-body">
+    <button type="button" class="btn btn-outline-primary" (click)="sendMessage()">จอง</button>
   </div>
 </div>
+<!-- <div>
+  <button class="btn btn-lg btn-outline-primary" (click)="open()">Launch demo modal</button>
+</div> -->
