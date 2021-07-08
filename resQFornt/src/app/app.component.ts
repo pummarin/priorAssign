@@ -1,6 +1,9 @@
-import { Component,Input,OnInit} from '@angular/core';
+import { Component,Input,OnInit, ViewChild} from '@angular/core';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog} from '@angular/material/dialog';
-import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { ModalDismissReasons, NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { Booking } from './model/booking.model';
+import { RequestBooking } from './model/requestBooking';
 import { MessageService } from './service/message.service';
 
 @Component({
@@ -9,65 +12,86 @@ import { MessageService } from './service/message.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit{
-  title = 'dailytemperature';
+  title = 'BookingRestaurant';
   input: any ;
-  name:any;
-  number:any;
+  isBooking: boolean;
+  request: RequestBooking;
+  userName:string;
+  userBooking:any;
+  currentQ:number;
+  closeResult = '';
+  @ViewChild("content") content;
+  
+  
   
   constructor(public messageService: MessageService,public dialog: MatDialog,private modalService: NgbModal) {}
  
   ngOnInit(): void {
+    
     // this.open();
+    this.messageService.currentQ.subscribe(x => {
+      console.log("x:",x);
+      this.currentQ = x;
+      if (this.currentQ == this.userBooking?.id) {
+        this.open();
+      }
+    })
+    
   }
 
-  
+  inputFrom = new FormGroup({
+    name: new FormControl('',Validators.required),
+    number: new FormControl('',Validators.required)
+  })
+
+  increase(){
+    this.messageService.increase();
+  }
+
+  decrease(){
+    this.messageService.decrease();
+  }
+
+  handleFinish(modal){
+    modal.close();
+    sessionStorage.clear();
+    location.reload();
+  }
 
   sendMessage() {
-    if (this.input) {
-      console.log(this.input);
-      
-      this.messageService.sendMessage(this.input);
-      this.input = '';
+    if (this.inputFrom.value) {
+      this.userName = this.inputFrom.controls.name.value;      
+      this.isBooking = true;
+      sessionStorage.setItem("user",this.userName);      
+      this.request = this.inputFrom.value;
+      console.log(this.request);      
+      this.messageService.saveBooking(this.request).then(res => {
+        let booking:Booking = res;
+        console.log("Booking:",booking);
+        this.userBooking = res;
+      })
+      // this.input = '';
     }
   }
-  toggleTodo(id: number){
-    this.messageService.toggleTodo(id);
-  }
-
   open() {
-    const modalRef = this.modalService.open(NgbdModalContent);
-    modalRef.componentInstance.name = 'World';
+    this.modalService.open(this.content, {ariaLabelledBy: 'modal-basic-title'}).result.then((result) => {
+      this.closeResult = `Closed with: ${result}`;
+    }, (reason) => {
+      this.closeResult = `Dismissed ${this.getDismissReason(reason)}`;
+    });
   }
-}
-@Component({
-  selector: 'ngbd-modal-content',
-  template: `
-    <div class="modal-header">
-      <h4 class="modal-title">Hi there!</h4>
-      <button type="button" class="close" aria-label="Close" (click)="activeModal.dismiss('Cross click')">
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-    <div class="modal-body">
-      <p>Hello, {{name}}!</p>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-outline-dark" (click)="activeModal.close('Close click')">Close</button>
-    </div>
-  `
-})
-export class NgbdModalContent {
-  @Input() name;
 
-  constructor(public activeModal: NgbActiveModal) {}
+  private getDismissReason(reason: any): string {
+    if (reason === ModalDismissReasons.ESC) {
+      return 'by pressing ESC';
+    } else if (reason === ModalDismissReasons.BACKDROP_CLICK) {
+      return 'by clicking on a backdrop';
+    } else {
+      return `with: ${reason}`;
+    }
+  }
+  
 }
-// export class NgbdModalComponent {
-//   constructor(private modalService: NgbModal) {}
 
-//   open() {
-//     const modalRef = this.modalService.open(NgbdModalContent);
-//     modalRef.componentInstance.name = 'World';
-//   }
-// }
 
 

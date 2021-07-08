@@ -1,6 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { Booking } from '../model/booking.model';
+import { RequestBooking } from '../model/requestBooking';
 // Declare SockJS and Stomp
 declare var SockJS: any;
 declare var Stomp: any;
@@ -9,55 +12,67 @@ declare var Stomp: any;
 })
 export class MessageService {
   serverUrl = environment.serverUrl;
-  constructor(private http: HttpClient) { 
-    this.initializeWebSocketConnection();
-    this.getMessages();
-  }
   public stompClient: any;
-  public todos: any[] = [];
+  public bookings: any[] = [];
+  public findBooking: any[] = [];
+  public user: string;
+  public userBooking: BehaviorSubject<any> = new BehaviorSubject(null);
+
+  public currentQ: BehaviorSubject<any> = new BehaviorSubject(0);
+
+  constructor(private http: HttpClient) {
+    this.initializeWebSocketConnection();
+    this.getCurrentQueue();
+  }
+
   initializeWebSocketConnection() {
     const serverUrl = this.serverUrl + '/socket';
     const ws = new SockJS(serverUrl);
     this.stompClient = Stomp.over(ws);
     const that = this;
     // tslint:disable-next-line:only-arrow-functions
-    this.stompClient.connect({}, function(frame: any) {
+    this.stompClient.connect({}, function (frame: any) {
       that.stompClient.subscribe('/message', (message: any) => {
-        
+
         if (message.body) {
-          let todo = JSON.parse(message.body);
-          console.log(`received todo:`, todo);
-          // TODO: Handle toggle completed
-          const _todoIndex = that.todos.findIndex(e => e.id == todo.id);
-          console.log(`_todo = `, _todoIndex);
-          if(_todoIndex != -1){
-            that.todos[_todoIndex].completed = todo.completed;
-          }else{
-            that.todos.push(todo);
-          }
+          console.log("mess", parseInt(message.body));
+          that.currentQ.next(parseInt(message.body));
         }
       });
     });
   }
-  sendMessage(title: string) {
-    this.stompClient.send('/app/send/message' , {}, title);
-  }
 
-  getMessages(){
-    console.log(`init getMessages`);
-    
-    this.http.get<any[]>(this.serverUrl + '/get/todos').subscribe(todoList => {
-      console.log(todoList);
-      this.todos = todoList;
-    })
-  }
 
-  toggleTodo(id: number){
-    console.log(`toggleTodo ${id}`);
-    
-    this.http.post<any[]>(`${this.serverUrl}/todo?id=${id}`, {}).subscribe(res => {
+  increase() {
+    this.http.get(`${this.serverUrl}/increaseQueue`, {}).subscribe(res => {
       console.log(res);
     })
+  }
+
+  decrease() {
+    this.http.get(`${this.serverUrl}/decreaseQueue`, {}).subscribe(res => {
+      console.log(res);
+    })
+  }
+
+  getCurrentQueue() {
+    this.http.get<number>(`${this.serverUrl}/get/currentQueue`, {}).subscribe(res => {
+      console.log(res);
+      this.currentQ.next(res);
+    })
+  }
+
+  saveBooking(requestBooking: RequestBooking) {
+    return new Promise<Booking>((ok, notok) => {
+      this.http.post<Booking>(`${this.serverUrl}/saveBooking`, requestBooking, {}).subscribe(res => {
+        console.log(res); 
+        ok(res);
+        
+      },error => {
+        notok(error)
+      })
+    })
+
   }
 }
 interface Todo {

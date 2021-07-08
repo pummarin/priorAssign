@@ -1,8 +1,10 @@
 package com.example.resQ.controller;
 
 
-import com.example.resQ.entity.Todo;
-import com.example.resQ.repository.TodoRepository;
+import com.example.resQ.entity.Booking;
+import com.example.resQ.model.BookingMessage;
+import com.example.resQ.repository.BookingRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,16 +13,17 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
+
 import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
-@Controller
+@RestController
 @Slf4j
 public class WebSocketController {
 
-    public List<Todo> todoList = new ArrayList<>();
+    private int queue = 0;
 
     private final SimpMessagingTemplate template;
 
@@ -30,33 +33,32 @@ public class WebSocketController {
     }
 
     @Autowired
-    private TodoRepository todoRepository;
+    private BookingRepository bookingRepository;
 
-    @CrossOrigin(origins = "http://localhost:4200")
     @MessageMapping("/send/message")
     public void sendMessage(String msg){
         log.info("sendMessage: {}", msg);
-        // create new TodoObject.
-        Todo _todo = new Todo();
-        _todo.setTitle(msg);
-        this.todoRepository.saveAndFlush(_todo);
-        this.todoList.add(_todo); // update todoList.
-        this.template.convertAndSend("/message",  _todo);
+        this.template.convertAndSend("/message",  msg);
     }
 
-    @CrossOrigin(origins = "http://localhost:4200")
-    @GetMapping("/get/todos")
-    public ResponseEntity<List<Todo>> getAllTodos(){
+    @GetMapping("/get/currentQueue")
+    public ResponseEntity<?> currentQueue(){
         log.info("getMessage");
-        return ResponseEntity.ok().body(this.todoList);
+        return ResponseEntity.ok().body(this.queue);
     }
 
-    public void toggleCompleted(Todo todo){
-        this.template.convertAndSend("/message",  todo); // for frontend.
-        this.todoList.forEach(t -> { // for update todoList.
-            if(t.getId().equals(todo.getId())){
-                t.setCompleted(todo.isCompleted());
-            }
-        });
+    @GetMapping("increaseQueue")
+    public void increaseQueue(){
+        queue+=1;
+        this.template.convertAndSend("/message",  queue);
     }
+
+    @GetMapping("decreaseQueue")
+    public void decreaseQueue(){
+        queue-=1;
+        this.template.convertAndSend("/message",  queue);
+
+    }
+
+
 }
